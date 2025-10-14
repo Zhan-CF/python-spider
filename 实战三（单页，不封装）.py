@@ -40,49 +40,6 @@ web.get('https://s.weibo.com/weibo?q=%23%E6%B5%B7%E5%A4%96%E6%96%B0%E9%B2%9C%E4%
 
 time.sleep(3)
 
-'''
-# 插入帖子数据
-def insert_to_db(post_data):
-    connection = pymysql.connect(host='127.0.0.1', port=3306, user='root', passwd='jlr$&3237', db='weibo_topic2', charset='utf8mb4')
-    try:
-        with connection.cursor() as cursor:
-            sql = 'INSERT INTO weibo_posts (author, post_time, content, style, repost_count, comment_count, like_count) VALUES (%s, %s, %s, %s, %s, %s, %s)'
-            cursor.execute(sql, post_data)
-            connection.commit()
-            return cursor.lastrowid
-    except Exception as e:
-        print(f"数据库插入失败: {e}")
-        connection.rollback()
-    finally:
-        connection.close()
-#插入一级评论数据
-def insert_one_comment_to_db(one_comment_data):
-    connection = pymysql.connect(host='127.0.0.1', port=3306, user='root', passwd='jlr$&3237', db='weibo_topic',charset='utf8mb4')
-    try:
-        with connection.cursor() as cursor:
-            sql = 'INSERT INTO one_comments (post_id, commenter, comment_time,content,comment_ip) VALUES (%s, %s, %s, %s, %s)'
-            cursor.execute(sql, one_comment_data)
-            connection.commit()
-            return cursor.lastrowid
-    except Exception as e:
-        print(f"一级评论插入失败: {e}")
-        connection.rollback()
-    finally:
-        connection.close()
-#插入二级评论数据
-def insert_two_comment_to_db(two_comment_data):
-    connection = pymysql.connect(host='127.0.0.1', port=3306, user='root', passwd='jlr$&3237', db='weibo_topic',charset='utf8mb4')
-    try:
-        with connection.cursor() as cursor:
-            sql = 'INSERT INTO two_comments (comment_id, replier, reply_time,content,reply_ip) VALUES (%s, %s, %s, %s, %s)'
-            cursor.execute(sql, two_comment_data)
-            connection.commit()
-    except Exception as e:
-        print(f"二级评论插入失败: {e}")
-        connection.rollback()
-    finally:
-        connection.close()
-'''
 #尝试把下边的大段封装成函数，但是一封装就会报错
 cards = web.find_elements(By.XPATH, '//div[@action-type="feed_list_item" and @class="card-wrap"]')  # 单页的话题下的内容块
 print(len(cards))
