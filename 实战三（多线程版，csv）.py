@@ -1,11 +1,9 @@
-#import requests
-#from lxml import html
-#from selenium import webdriver
 from selenium.webdriver import Edge
 from selenium.webdriver.common.by import By
 #from selenium.webdriver.common.action_chains import ActionChains
-
+from concurrent.futures import ThreadPoolExecutor
 import time
+import csv
 
 #url = 'https://s.weibo.com/weibo?q=%23%E6%B5%B7%E5%A4%96%E6%96%B0%E9%B2%9C%E4%BA%8B%23&page=1'
 
@@ -15,9 +13,7 @@ import time
 #response = requests.get(url, headers=headers)
 #tree = html.fromstring(response.text)
 
-web = Edge()
-web.get("https://weibo.com")
-time.sleep(2)
+
 
 cookies = [{
         'name': 'SUB',
@@ -29,20 +25,23 @@ cookies = [{
         'value': '0033WrSXqPxfM725Ws9jqgMF55529P9D9WWw_V-G0k2VOMq.cDbeIrQR5NHD95QNeoq7So.c1KMpWs4DqcjMi--ciK.Ni-27i--fi-isiKn0S0zcehq4So.NeBtt',
         'domain': '.weibo.com'
     }]
-for cookie in cookies:
-    web.add_cookie(cookie)
-web.refresh()
-time.sleep(2)
-web.get('https://s.weibo.com/weibo?q=%23%E6%B5%B7%E5%A4%96%E6%96%B0%E9%B2%9C%E4%BA%8B%23&page=1')
+
+#web.get('https://s.weibo.com/weibo?q=%23%E6%B5%B7%E5%A4%96%E6%96%B0%E9%B2%9C%E4%BA%8B%23&page=1')
 #带着cookie去就不用登录了
-
-time.sleep(3)
-
 
 #尝试把下边的大段封装成函数，但是一封装就会报错
 
 
-for page in range(1,51):
+def weibo_page(page,cookies,post_id):
+    web = Edge()
+    web.get("https://weibo.com")
+    time.sleep(2)
+    for cookie in cookies:
+        web.add_cookie(cookie)
+    web.refresh()
+    time.sleep(2)
+    web.get('https://s.weibo.com/weibo?q=%23%E6%B5%B7%E5%A4%96%E6%96%B0%E9%B2%9C%E4%BA%8B%23&page='+str(page))
+    time.sleep(3)
     cards = web.find_elements(By.XPATH, '//div[@action-type="feed_list_item" and @class="card-wrap"]')  # 单页的话题下的内容块
     print(len(cards))
     for card in cards:
@@ -62,7 +61,7 @@ for page in range(1,51):
 
             style = '文字'
             if not card.find_elements(By.XPATH,'.//div[@node-type="feed_list_media_prev"]'):
-                continue
+                pass
             else:
                 if card.find_elements(By.XPATH,'.//div[@node-type="feed_list_media_prev"]//video'):
                     style += '+视频'
@@ -82,7 +81,8 @@ for page in range(1,51):
             like_num = card.find_element(By.XPATH,'.//span[@class="woo-like-count"]').text.strip()
             if like_num == '赞':
                 like_num = 0
-            print('帖子',author, time_,content_text,style, repost_num, comment_num, like_num)
+            post_id += 1
+            print('帖子:',post_id,author, time_,content_text,style, repost_num, comment_num, like_num)
 
 
             #点击评论使其显示
@@ -96,21 +96,26 @@ for page in range(1,51):
                 #one_comments = card.find_elements(By.XPATH, './/div[@node-type="feed_list_commentList"]')  # 内容模块们
                 one_comments = card.find_elements(By.XPATH, './/div[@class="card-review s-ptb10"]')   #一级评论模块们
                 print(len(one_comments))
-                for one_comment in one_comments:
-                    one_comment_ = one_comment.find_element(By.XPATH,'.//div[@class="txt"]').text.strip()  #包含发布者和内容
-                    one_comment_author = one_comment_.split(':')[0]
-                    if len(one_comment_.split(':')) == 2:
-                        one_comment_content = one_comment_.split(':')[1]
-                    else:
-                        one_comment_content = ''
-                        if one_comment.find_elements(By.XPATH, './/div[@class="text"]/span/img'):
-                            one_comment_content += one_comment.find_element(By.XPATH,'.//div[@class="text"]/span/img').get_attribute('title')
-                        if one_comment.find_elements(By.XPATH, './/div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]'):
-                            one_comment_img = one_comment.find_element(By.XPATH,'.//div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]//img').get_attribute('src')
-                            one_comment_content += one_comment_img
-                    one_comment_time = one_comment.find_element(By.XPATH,'.//p[@class="from"]').text.strip()
-                    one_comment_ip = "无"    #评论太少进入不了详情页，无法获取ip
-                    print('较少一级评论',one_comment_author,one_comment_content, one_comment_time,one_comment_ip)
+                with open('one_comments1.csv', 'a', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(['post_id','one_comment_id','author', 'content', 'time', 'ip'])
+                    for one_comment in one_comments:
+                        one_comment_ = one_comment.find_element(By.XPATH,'.//div[@class="txt"]').text.strip()  #包含发布者和内容
+                        one_comment_author = one_comment_.split(':')[0]
+                        if len(one_comment_.split(':')) == 2:
+                            one_comment_content = one_comment_.split(':')[1]
+                        else:
+                            one_comment_content = ''
+                            if one_comment.find_elements(By.XPATH, './/div[@class="text"]/span/img'):
+                                one_comment_content += one_comment.find_element(By.XPATH,'.//div[@class="text"]/span/img').get_attribute('title')
+                            if one_comment.find_elements(By.XPATH, './/div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]'):
+                                one_comment_img = one_comment.find_element(By.XPATH,'.//div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]//img').get_attribute('src')
+                                one_comment_content += one_comment_img
+                        one_comment_time = one_comment.find_element(By.XPATH,'.//p[@class="from"]').text.strip()
+                        one_comment_ip = "无"    #评论太少进入不了详情页，无法获取ip
+                        one_comment_id = 0
+                        print('较少一级评论',one_comment_author,one_comment_content, one_comment_time,one_comment_ip)
+                        writer.writerow([post_id,one_comment_id,one_comment_author,one_comment_content, one_comment_time,one_comment_ip])
             else:   #需要展开的一级评论
                 comment_link = card.find_element(By.XPATH, './/div[@class="card-more-a"]/a')
                 web.execute_script("arguments[0].target = '_blank';", comment_link)  #另起一个标签页，不然不容易返回原来的页面
@@ -121,8 +126,11 @@ for page in range(1,51):
                 time.sleep(2)  # 等待页面加载新的评论
                 one_comments = web.find_elements(By.XPATH,'.//div[@class="vue-recycle-scroller__item-view"]')  #一级评论模块们
                 print(len(one_comments))
-                for one_comment in one_comments:
-                    try:
+                with open('one_comments1.csv', 'a', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(['post_id','one_comment_id','author', 'content', 'time', 'ip'])
+                    one_comment_id = 0    #由于mysql传不进去实现不了表的关联，所以只能手动赋予它们id以便在csv中可以一一对应,由于不需要展开的一级评论一般无二级，所以将它们统一id为0
+                    for one_comment in one_comments:
                         one_comment_ = one_comment.find_element(By.XPATH, './/div[@class="text"]').text.strip()  # 包含发布者和内容的一级评论模块们
                         one_comment_author = one_comment_.split(':')[0]
                         if len(one_comment_.split(':')) == 2:
@@ -130,13 +138,17 @@ for page in range(1,51):
                         else:
                             one_comment_content = ''
                         if one_comment.find_elements(By.XPATH, './/div[@class="text"]/span/img'):
-                            one_comment_content += one_comment.find_element(By.XPATH, './/div[@class="text"]/span/img').get_attribute('title')  #表情处理
+                            one_comment_content += one_comment.find_element(By.XPATH, './/div[@class="text"]/span/img').get_attribute('title')
                         if one_comment.find_elements(By.XPATH, './/div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]'):
-                            one_comment_img = one_comment.find_element(By.XPATH, './/div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]//img').get_attribute('src')  #图片处理
+                            one_comment_img = one_comment.find_element(By.XPATH, './/div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]//img').get_attribute('src')
                             one_comment_content += one_comment_img
                         one_comment_time = one_comment.find_element(By.XPATH,'.//div[@class="info woo-box-flex woo-box-alignCenter woo-box-justifyBetween"]/div').text.split(' ')[0]  #去掉后半部分，不然就会得到两次ip
                         one_comment_ip = one_comment.find_element(By.XPATH,'.//div[@class="info woo-box-flex woo-box-alignCenter woo-box-justifyBetween"]/div/span').text.strip()
+                        one_comment_id += 1
                         print('一级评论',one_comment_author, one_comment_content, one_comment_time, one_comment_ip)
+                        writer.writerow([post_id,one_comment_id,one_comment_author,one_comment_content, one_comment_time,one_comment_ip])
+
+                        #不需要展开的一级评论一般没有二级评论，吧，上边就不写了，不能封装函数好麻烦
                         if not one_comment.find_elements(By.XPATH,'.//div[@class="item2"]'):
                             print('无二级评论')
                         else:
@@ -144,18 +156,22 @@ for page in range(1,51):
                             if not one_comment.find_elements(By.XPATH,'.//div[@class="item2"]/div[@class="text"]/a/i'):   #不需要展开的二级评论
                                 print('有不需要展开的二级评论')
                                 two_comments = one_comment.find_elements(By.XPATH,'.//div[@class="item2"]')
-                                for two_comment in two_comments:
-                                    two_comment_ = two_comment.find_element(By.XPATH,'.//div[@class="text"]').text.strip()
-                                    two_comment_author = two_comment_.split(':')[0]
-                                    if len(two_comment_.split(':')) == 2:
-                                        two_comment_content = two_comment_.split(':')[1]
-                                    else:
-                                        two_comment_content = ''
-                                    if two_comment.find_elements(By.XPATH, './/div[@class="text"]/span/img'):
-                                        two_comment_content += two_comment.find_element(By.XPATH,'.//div[@class="text"]/span/img').get_attribute('title')
-                                    two_comment_time = two_comment.find_element(By.XPATH,'.//div[@class="con2"]/div[2]/div[1]').text.split(' ')[0].strip()
-                                    two_comment_ip = two_comment.find_element(By.XPATH,'.//div[@class="con2"]/div[2]/div[1]/span').text.strip()
-                                    print('二级评论:',two_comment_author, two_comment_content, two_comment_time, two_comment_ip)
+                                with open('two_comments1.csv', 'a', newline='', encoding='utf-8') as p:
+                                    writer = csv.writer(p)
+                                    writer.writerow(['post_id','one_comment_id','author', 'content', 'time', 'ip'])
+                                    for two_comment in two_comments:
+                                        two_comment_ = two_comment.find_element(By.XPATH,'.//div[@class="text"]').text.strip()
+                                        two_comment_author = two_comment_.split(':')[0]
+                                        if len(two_comment_.split(':')) == 2:
+                                            two_comment_content = two_comment_.split(':')[1]
+                                        else:
+                                            two_comment_content = ''
+                                        if two_comment.find_elements(By.XPATH, './/div[@class="text"]/span/img'):
+                                            two_comment_content += two_comment.find_element(By.XPATH,'.//div[@class="text"]/span/img').get_attribute('title')
+                                        two_comment_time = two_comment.find_element(By.XPATH,'.//div[@class="con2"]/div[2]/div[1]').text.split(' ')[0].strip()
+                                        two_comment_ip = two_comment.find_element(By.XPATH,'.//div[@class="con2"]/div[2]/div[1]/span').text.strip()
+                                        print('二级评论:',two_comment_author, two_comment_content, two_comment_time, two_comment_ip)
+                                        writer.writerow([post_id,one_comment_id,two_comment_author,two_comment_content, two_comment_time,two_comment_ip])
                             else:   #需要展开的二级评论
                                 print('有需要展开的二级评论')
                                 one_comment.find_element(By.XPATH,'.//div[@class="item2"]/div[@class="text"]/a').click()   #点击展开二级评论
@@ -164,8 +180,10 @@ for page in range(1,51):
                                 web.execute_script("window.scrollTo(0, document.body.scrollHeight);")    #没看见有滚动，但是确实可以加载完全
                                 time.sleep(2)
                                 two_comments = web.find_elements(By.XPATH,'//div[@class="woo-modal-main"]/div[@class="wbpro-layer"]//div[@class="list2"]//div[@class="vue-recycle-scroller__item-view"]')
-                                for two_comment in two_comments:
-                                    try:
+                                with open('two_comments1.csv', 'a', newline='', encoding='utf-8') as p:
+                                    writer = csv.writer(p)
+                                    writer.writerow(['post_id','one_comment_id','author', 'content', 'time', 'ip'])
+                                    for two_comment in two_comments:
                                         two_comment_ = two_comment.find_element(By.XPATH,'.//div[@class="text"]').text.strip()  # 包含发布者和内容的二级评论模块们
                                         two_comment_author = two_comment_.split(':')[0]
                                         if len(two_comment_.split(':')) == 2:
@@ -178,16 +196,21 @@ for page in range(1,51):
                                         two_comment_time = two_comment.find_element(By.XPATH,'.//div[@class="con2"]/div[2]/div').text.split(' ')[0]
                                         two_comment_ip = two_comment.find_element(By.XPATH,'.//div[@class="con2"]/div[2]/div/span').text
                                         print('二级评论:',two_comment_author, two_comment_content, two_comment_time, two_comment_ip)
-                                    except Exception as p:
-                                        print('该二级评论爬取中止',p)
+                                        writer.writerow([post_id,one_comment_id,two_comment_author,two_comment_content, two_comment_time,two_comment_ip])
                                 web.find_element(By.XPATH,'.//div[@class="wbpro-layer-tit woo-box-flex"]/div[2]').click()
                                 time.sleep(2)
-                    except Exception as q:
-                        print('该一级评论爬取中止',q)
                 web.close()
                 web.switch_to.window(web.window_handles[0])
         except Exception as e:
             print('该帖子爬取中止:',e)
     print(f'第{page}页爬取完成')
-    web.find_element(By.XPATH,'//div[@class="m-page"]/div/a[@class="next"]').click()
-web.close()
+    web.quit()
+
+
+#input()
+def crawl_with_isolated_drivers(cookies):
+    post_id = 0
+    with ThreadPoolExecutor(max_workers=3) as executor:  # 减少并发数，避免资源耗尽
+        for page in range(1, 51):
+            executor.submit(weibo_page, page, cookies,post_id)
+crawl_with_isolated_drivers(cookies)

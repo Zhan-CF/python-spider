@@ -104,7 +104,7 @@ def weibo_page(page,cookies):
 
             style = '文字'
             if not card.find_elements(By.XPATH,'.//div[@node-type="feed_list_media_prev"]'):
-                continue
+                pass
             else:
                 if card.find_elements(By.XPATH,'.//div[@node-type="feed_list_media_prev"]//video'):
                     style += '+视频'
@@ -146,16 +146,16 @@ def weibo_page(page,cookies):
                         one_comment_content = one_comment_.split(':')[1]
                     else:
                         one_comment_content = ''
-                        if one_comment.find_elements(By.XPATH, './/div[@class="text"]/span/img'):
+                    if one_comment.find_elements(By.XPATH, './/div[@class="text"]/span/img'):
                             one_comment_content += one_comment.find_element(By.XPATH,'.//div[@class="text"]/span/img').get_attribute('title')
-                        if one_comment.find_elements(By.XPATH, './/div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]'):
+                    if one_comment.find_elements(By.XPATH, './/div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]'):
                             one_comment_img = one_comment.find_element(By.XPATH,'.//div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]//img').get_attribute('src')
                             one_comment_content += one_comment_img
                     one_comment_time = one_comment.find_element(By.XPATH,'.//p[@class="from"]').text.strip()
                     one_comment_ip = "无"    #评论太少进入不了详情页，无法获取ip
                     print('较少一级评论',one_comment_author,one_comment_content, one_comment_time,one_comment_ip)
                     one_comment_data = (post_id,one_comment_author, one_comment_time,one_comment_content, one_comment_ip)
-                    #comment_id = insert_to_db(one_comment_data)   #这个一般没二级评论
+                    insert_to_db(one_comment_data)   #这个一般没二级评论
             else:   #需要展开的一级评论
                 comment_link = card.find_element(By.XPATH, './/div[@class="card-more-a"]/a')
                 web.execute_script("arguments[0].target = '_blank';", comment_link)  #另起一个标签页，不然不容易返回原来的页面
