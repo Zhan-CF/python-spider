@@ -52,8 +52,10 @@ with open('实战二_rank.csv', 'w', newline='', encoding='utf-8') as f:
             name = tr.find_element(By.XPATH,'./td[2]/div/div[2]/div[1]/div/div/span').text
             E_name = tr.find_element(By.XPATH,'./td[2]/div/div[2]/div[2]/div/div/span').text
             province = tr.find_element(By.XPATH,'./td[3]').text
-            rating = tr.find_element(By.XPATH,'./td[2]/div/div[2]/div[2]/div/div/span').text
-            level = tr.find_element(By.XPATH,'./td[2]/div/div[2]/div[2]/div/div/span').text
+            rating = tr.find_element(By.XPATH,'./td[5]').text
+            level = tr.find_element(By.XPATH,'./td[6]').text
+            if len(level) == 0:
+                level = '无'
 
             writer.writerow([rank,name,E_name,province,rating,level])
             print(rank,name,E_name,province,rating,level)
