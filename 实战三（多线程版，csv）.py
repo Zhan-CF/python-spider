@@ -96,7 +96,7 @@ def weibo_page(page,cookies,post_id):
                 #one_comments = card.find_elements(By.XPATH, './/div[@node-type="feed_list_commentList"]')  # 内容模块们
                 one_comments = card.find_elements(By.XPATH, './/div[@class="card-review s-ptb10"]')   #一级评论模块们
                 print(len(one_comments))
-                with open('one_comments1.csv', 'a', newline='', encoding='utf-8') as f:
+                with open('实战三_one_comments1.csv', 'a', newline='', encoding='utf-8') as f:
                     writer = csv.writer(f)
                     writer.writerow(['post_id','one_comment_id','author', 'content', 'time', 'ip'])
                     for one_comment in one_comments:
@@ -126,7 +126,7 @@ def weibo_page(page,cookies,post_id):
                 time.sleep(2)  # 等待页面加载新的评论
                 one_comments = web.find_elements(By.XPATH,'.//div[@class="vue-recycle-scroller__item-view"]')  #一级评论模块们
                 print(len(one_comments))
-                with open('one_comments1.csv', 'a', newline='', encoding='utf-8') as f:
+                with open('实战三_one_comments1.csv', 'a', newline='', encoding='utf-8') as f:
                     writer = csv.writer(f)
                     writer.writerow(['post_id','one_comment_id','author', 'content', 'time', 'ip'])
                     one_comment_id = 0    #由于mysql传不进去实现不了表的关联，所以只能手动赋予它们id以便在csv中可以一一对应,由于不需要展开的一级评论一般无二级，所以将它们统一id为0
@@ -156,7 +156,7 @@ def weibo_page(page,cookies,post_id):
                             if not one_comment.find_elements(By.XPATH,'.//div[@class="item2"]/div[@class="text"]/a/i'):   #不需要展开的二级评论
                                 print('有不需要展开的二级评论')
                                 two_comments = one_comment.find_elements(By.XPATH,'.//div[@class="item2"]')
-                                with open('two_comments1.csv', 'a', newline='', encoding='utf-8') as p:
+                                with open('实战三_two_comments1.csv', 'a', newline='', encoding='utf-8') as p:
                                     writer = csv.writer(p)
                                     writer.writerow(['post_id','one_comment_id','author', 'content', 'time', 'ip'])
                                     for two_comment in two_comments:
@@ -180,7 +180,7 @@ def weibo_page(page,cookies,post_id):
                                 web.execute_script("window.scrollTo(0, document.body.scrollHeight);")    #没看见有滚动，但是确实可以加载完全
                                 time.sleep(2)
                                 two_comments = web.find_elements(By.XPATH,'//div[@class="woo-modal-main"]/div[@class="wbpro-layer"]//div[@class="list2"]//div[@class="vue-recycle-scroller__item-view"]')
-                                with open('two_comments1.csv', 'a', newline='', encoding='utf-8') as p:
+                                with open('实战三_two_comments1.csv', 'a', newline='', encoding='utf-8') as p:
                                     writer = csv.writer(p)
                                     writer.writerow(['post_id','one_comment_id','author', 'content', 'time', 'ip'])
                                     for two_comment in two_comments:

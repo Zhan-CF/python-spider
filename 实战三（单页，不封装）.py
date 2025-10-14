@@ -138,7 +138,7 @@ for card in cards:
             #one_comments = card.find_elements(By.XPATH, './/div[@node-type="feed_list_commentList"]')  # 内容模块们
             one_comments = card.find_elements(By.XPATH, './/div[@class="card-review s-ptb10"]')   #一级评论模块们
             print(len(one_comments))
-            with open('one_comments.csv', 'a', newline='', encoding='utf-8') as f:
+            with open('实战三_one_comments.csv', 'a', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 writer.writerow(['author', 'content', 'time', 'ip'])
                 for one_comment in one_comments:
@@ -171,7 +171,7 @@ for card in cards:
             time.sleep(2)  # 等待页面加载新的评论
             one_comments = web.find_elements(By.XPATH,'.//div[@class="vue-recycle-scroller__item-view"]')  #一级评论模块们
             print(len(one_comments))
-            with open('one_comments.csv', 'a', newline='', encoding='utf-8') as f:
+            with open('实战三_one_comments.csv', 'a', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 writer.writerow(['author', 'content', 'time', 'ip'])
                 for one_comment in one_comments:
