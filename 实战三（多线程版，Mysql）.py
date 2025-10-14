@@ -4,6 +4,123 @@ from selenium.webdriver.common.by import By
 from concurrent.futures import ThreadPoolExecutor
 import pymysql
 import time
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+import re
+
+def _get_tz(tz_name="America/Toronto"):
+    if ZoneInfo is not None:
+        return ZoneInfo(tz_name)
+    else:
+        # 回退到 UTC 偏移 - you can replace with pytz if available
+        return timezone(timedelta(hours=-4))  # 近似 Eastern DST (注意：不处理夏令时切换)
+
+def parse_weibo_time(s: str, now: datetime | None = None, tz_name: str = "America/Toronto"):
+    if not s or not s.strip():
+        return None, None
+    s = s.strip()
+
+    tz = _get_tz(tz_name)
+
+    if now is None:
+        now = datetime.now(tz)
+
+    # 1) 直接常见短语
+    if s == "刚刚" or s.lower() == "just now":
+        dt = now
+        return dt, int(dt.timestamp())
+
+    m = re.match(r'(\d+)\s*分钟前', s)
+    if m:
+        minutes = int(m.group(1))
+        dt = now - timedelta(minutes=minutes)
+        return dt, int(dt.timestamp())
+
+    m = re.match(r'(\d+)\s*小时前', s)
+    if m:
+        hours = int(m.group(1))
+        dt = now - timedelta(hours=hours)
+        return dt, int(dt.timestamp())
+
+    # "今天 HH:MM" / "今天 HH:MM:SS"
+    m = re.match(r'今天\s*(\d{1,2}):(\d{2})(?::(\d{2}))?$', s)
+    if m:
+        hh = int(m.group(1))
+        mm = int(m.group(2))
+        ss = int(m.group(3) or 0)
+        dt = datetime(now.year, now.month, now.day, hh, mm, ss, tzinfo=tz)
+        return dt, int(dt.timestamp())
+
+    # "昨天 HH:MM"
+    m = re.match(r'昨天\s*(\d{1,2}):(\d{2})(?::(\d{2}))?$', s)
+    if m:
+        hh = int(m.group(1))
+        mm = int(m.group(2))
+        ss = int(m.group(3) or 0)
+        d = (now - timedelta(days=1)).date()
+        dt = datetime(d.year, d.month, d.day, hh, mm, ss, tzinfo=tz)
+        return dt, int(dt.timestamp())
+
+    # 完整带年: "2020-10-14 12:34" 或 "2020年10月14日 12:34"
+    m = re.match(r'(\d{4})[-年/](\d{1,2})[-月/](\d{1,2})[日]?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?$', s)
+    if m:
+        y = int(m.group(1))
+        mo = int(m.group(2))
+        d = int(m.group(3))
+        hh = int(m.group(4))
+        mm = int(m.group(5))
+        ss = int(m.group(6) or 0)
+        dt = datetime(y, mo, d, hh, mm, ss, tzinfo=tz)
+        return dt, int(dt.timestamp())
+
+    # 只有日期（带年或不带年） "2020-10-14" 或 "2020年10月14日"
+    m = re.match(r'(\d{4})[-年/](\d{1,2})[-月/](\d{1,2})[日]?\s*$', s)
+    if m:
+        y = int(m.group(1))
+        mo = int(m.group(2))
+        d = int(m.group(3))
+        dt = datetime(y, mo, d, 0, 0, 0, tzinfo=tz)
+        return dt, int(dt.timestamp())
+
+    # 月日（无年） "10月14日 12:34" or "10月14日"
+    m = re.match(r'(\d{1,2})月(\d{1,2})日(?:\s*(\d{1,2}):(\d{2})(?::(\d{2}))?)?$', s)
+    if m:
+        mo = int(m.group(1))
+        d = int(m.group(2))
+        hh = int(m.group(3) or 0)
+        mm = int(m.group(4) or 0)
+        ss = int(m.group(5) or 0)
+        y = now.year
+        # 如果该月日在未来（当前日期早于该月日），说明可能是去年（跨年场景）
+        candidate = datetime(y, mo, d, hh, mm, ss, tzinfo=tz)
+        if candidate > now + timedelta(days=1):  # 给容错一天
+            y -= 1
+            candidate = datetime(y, mo, d, hh, mm, ss, tzinfo=tz)
+        return candidate, int(candidate.timestamp())
+
+    # 英文格式ISO 或 常见格式，尝试解析 YYYY-MM-DDTHH:MM:SS 或 YYYY/MM/DD
+    m = re.match(r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?', s)
+    if m:
+        y = int(m.group(1))
+        mo = int(m.group(2))
+        d = int(m.group(3))
+        hh = int(m.group(4) or 0)
+        mm = int(m.group(5) or 0)
+        ss = int(m.group(6) or 0)
+        dt = datetime(y, mo, d, hh, mm, ss, tzinfo=tz)
+        return dt, int(dt.timestamp())
+
+    # 兜底：尝试把纯时间字符串当作 HH:MM（今天）
+    m = re.match(r'^(\d{1,2}):(\d{2})(?::(\d{2}))?$', s)
+    if m:
+        hh = int(m.group(1))
+        mm = int(m.group(2))
+        ss = int(m.group(3) or 0)
+        dt = datetime(now.year, now.month, now.day, hh, mm, ss, tzinfo=tz)
+        return dt, int(dt.timestamp())
+    # 无法识别，返回 None
+    return None, None
+
 
 #url = 'https://s.weibo.com/weibo?q=%23%E6%B5%B7%E5%A4%96%E6%96%B0%E9%B2%9C%E4%BA%8B%23&page=1'
 
@@ -91,6 +208,10 @@ def weibo_page(page,cookies):
         try:
             author = card.find_element(By.XPATH,'.//a[@class="name"]').text
             time_ = card.find_element(By.XPATH,'.//div[@class="from"]/a').text.strip()   #.text返回的是字符串，xpath的/text()返回的是列表
+            if '转' in time_:
+                time_ = time_.split('转')[0].strip()   #处理后边的转赞人数
+            dt, ts = parse_weibo_time(time_)
+            time_ = dt
             content_element = card.find_elements(By.XPATH,'.//p[@class="txt" and contains(@style,"display: none;")]')   #需要展开的内容,要后边的标签但不要最后的收起两个字，xpath返回列表时最后一个元素是换行符，倒二是d，收起在倒三，用了selenium后可以直接去空格再切片
             if not content_element:
                 content_text = card.find_element(By.XPATH,'.//p[@class="txt"]').text.strip()    #不需要展开的内容
