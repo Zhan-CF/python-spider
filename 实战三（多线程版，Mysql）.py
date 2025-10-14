@@ -240,8 +240,8 @@ def weibo_page(page,cookies):
 
 
 #input()
-def crawl_with_isolated_drivers(cookies):
-    with ThreadPoolExecutor(max_workers=3) as executor:  # 减少并发数，避免资源耗尽
+def crawl(cookies):
+    with ThreadPoolExecutor(max_workers=3) as executor:  # 减少并发数
         for page in range(1, 51):
             executor.submit(weibo_page, page, cookies)
-crawl_with_isolated_drivers(cookies)
+crawl(cookies)
