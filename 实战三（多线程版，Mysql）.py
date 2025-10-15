@@ -262,9 +262,9 @@ def weibo_page(page,cookies):
                 print(len(one_comments))
                 for one_comment in one_comments:
                     one_comment_ = one_comment.find_element(By.XPATH,'.//div[@class="txt"]').text.strip()  #包含发布者和内容
-                    one_comment_author = one_comment_.split(':')[0]
-                    if len(one_comment_.split(':')) == 2:
-                        one_comment_content = one_comment_.split(':')[1]
+                    one_comment_author = one_comment_.split('：')[0]   #不需要展开的一级评论的冒号竟然是中文模式的,需要跳转的评论的冒号就是英文的
+                    if len(one_comment_.split('：')) == 2:
+                        one_comment_content = one_comment_.split('：')[1]
                     else:
                         one_comment_content = ''
                     if one_comment.find_elements(By.XPATH, './/div[@class="text"]/span/img'):
