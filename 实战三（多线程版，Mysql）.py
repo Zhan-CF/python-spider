@@ -273,6 +273,8 @@ def weibo_page(page,cookies):
                             one_comment_img = one_comment.find_element(By.XPATH,'.//div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]//img').get_attribute('src')
                             one_comment_content += one_comment_img
                     one_comment_time = one_comment.find_element(By.XPATH,'.//p[@class="from"]').text.strip()
+                    dt, ts = parse_weibo_time(one_comment_time)
+                    one_comment_time = dt
                     one_comment_ip = "无"    #评论太少进入不了详情页，无法获取ip
                     print('较少一级评论',one_comment_author,one_comment_content, one_comment_time,one_comment_ip)
                     one_comment_data = (post_id,one_comment_author, one_comment_time,one_comment_content, one_comment_ip)
@@ -300,6 +302,8 @@ def weibo_page(page,cookies):
                         one_comment_img = one_comment.find_element(By.XPATH, './/div[@class="con1 woo-box-item-flex"]/div[@class="u-col-6"]//img').get_attribute('src')
                         one_comment_content += one_comment_img
                     one_comment_time = one_comment.find_element(By.XPATH,'.//div[@class="info woo-box-flex woo-box-alignCenter woo-box-justifyBetween"]/div').text.split(' ')[0]  #去掉后半部分，不然就会得到两次ip
+                    dt, ts = parse_weibo_time(one_comment_time)
+                    one_comment_time = dt
                     one_comment_ip = one_comment.find_element(By.XPATH,'.//div[@class="info woo-box-flex woo-box-alignCenter woo-box-justifyBetween"]/div/span').text.strip()
                     print('一级评论',one_comment_author, one_comment_content, one_comment_time, one_comment_ip)
                     one_comment_data = (post_id,one_comment_author, one_comment_time, one_comment_content, one_comment_ip)
@@ -323,6 +327,8 @@ def weibo_page(page,cookies):
                                 if two_comment.find_elements(By.XPATH, './/div[@class="text"]/span/img'):
                                     two_comment_content += two_comment.find_element(By.XPATH,'.//div[@class="text"]/span/img').get_attribute('title')
                                 two_comment_time = two_comment.find_element(By.XPATH,'.//div[@class="con2"]/div[2]/div[1]').text.split(' ')[0].strip()
+                                dt, ts = parse_weibo_time(two_comment_time)
+                                two_comment_time = dt
                                 two_comment_ip = two_comment.find_element(By.XPATH,'.//div[@class="con2"]/div[2]/div[1]/span').text.strip()
                                 print('二级评论:',two_comment_author, two_comment_content, two_comment_time, two_comment_ip)
                                 two_comment_data = (comment_id,two_comment_author, two_comment_time,two_comment_content, two_comment_ip)
@@ -346,6 +352,8 @@ def weibo_page(page,cookies):
                                     two_comment_content += two_comment.find_element(By.XPATH,'.//div[@class="text"]/span/img').get_attribute('title')
                                 #微博的二级评论不支持图片
                                 two_comment_time = two_comment.find_element(By.XPATH,'.//div[@class="con2"]/div[2]/div').text.split(' ')[0]
+                                dt, ts = parse_weibo_time(two_comment_time)
+                                two_comment_time = dt
                                 two_comment_ip = two_comment.find_element(By.XPATH,'.//div[@class="con2"]/div[2]/div/span').text
                                 print('二级评论:',two_comment_author, two_comment_content, two_comment_time, two_comment_ip)
                                 two_comment_data = (comment_id,two_comment_author, two_comment_time, two_comment_content, two_comment_ip)
